@@ -24,10 +24,8 @@ setup() {
 	auto_generate_policy "${policy_settings_dir}" "${yaml_file}"
 
 	# Create pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Check pod class
 	kubectl get pod "$pod_name" --output=yaml | grep "qosClass: Guaranteed"
@@ -43,10 +41,8 @@ setup() {
 	auto_generate_policy "${policy_settings_dir}" "${yaml_file}"
 
 	# Create pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Check pod class
 	kubectl get pod "$pod_name" --output=yaml | grep "qosClass: Burstable"
@@ -62,10 +58,8 @@ setup() {
 	auto_generate_policy "${policy_settings_dir}" "${yaml_file}"
 
 	# Create pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Check pod class
 	kubectl get pod "$pod_name" --output=yaml | grep "qosClass: BestEffort"

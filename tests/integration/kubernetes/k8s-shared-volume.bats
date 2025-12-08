@@ -31,10 +31,8 @@ setup() {
 	auto_generate_policy "${policy_settings_dir}" "${yaml_file}"
 
 	# Create pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pods
-	kubectl wait --for=condition=Ready --timeout=$timeout pod $pod_name
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Communicate containers
 	msg="Hello from the $second_container_name"
@@ -58,10 +56,7 @@ setup() {
 	auto_generate_policy "${policy_settings_dir}" "${yaml_file}"
 
 	# Create pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pods
-	kubectl wait --for=condition=Ready --timeout=$timeout pod $pod_name
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	kubectl exec "$pod_name" -c "$last_container" -- "${exec_command[@]}"
 }

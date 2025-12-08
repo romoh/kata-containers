@@ -60,10 +60,7 @@ setup() {
 	waitForProcess "$wait_time" "$sleep_time" "$cmd"
 
 	# Create pod
-	kubectl create -f "$pod_yaml"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	k8s_create_pod_ready "${pod_name}" "${pod_yaml}"
 
 	grep_pod_exec_output "$pod_name" "$msg" "${exec_command[@]}"
 }

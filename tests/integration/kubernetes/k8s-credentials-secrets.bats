@@ -49,20 +49,15 @@ setup() {
 	kubectl get secret "${secret_name}" -o yaml | grep "type: Opaque"
 
 	# Create a pod that has access to the secret through a volume
-	kubectl create -f "${pod_yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	k8s_create_pod_ready "${pod_name}" "${pod_yaml_file}"
 
 	# List the files
 	pod_exec_with_retries "${pod_name}" "${pod_exec_command[@]}" | grep -w "password"
 	pod_exec_with_retries "${pod_name}" "${pod_exec_command[@]}" | grep -w "username"
 
 	# Create a pod that has access to the secret data through environment variables
-	kubectl create -f "${pod_env_yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$second_pod_name"
+	# Retries
+	k8s_create_pod_ready "${second_pod_name}" "${pod_env_yaml_file}"
 
 	# Display environment variables
 	pod_exec_with_retries "${second_pod_name}" "${pod_env_exec_command[@]}" | grep -w "SECRET_USERNAME"

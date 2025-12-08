@@ -26,10 +26,7 @@ setup() {
 	kubectl create -f "${pod_config_dir}/limit-range.yaml" --namespace=${namespace_name}
 
 	# Create the pod
-	kubectl create -f "${pod_yaml}" --namespace=${namespace_name}
-
-	# Get pod specification
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name" --namespace="$namespace_name"
+	k8s_create_pod_ready "{pod_name}" "${pod_yaml}" "${namespace_name}"
 
 	# Check limits
 	# Find the 500 millicpus specified at the yaml

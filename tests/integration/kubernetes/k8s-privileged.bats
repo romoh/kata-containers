@@ -26,8 +26,9 @@ setup() {
 # This should succeed because the CI uses kata-deploy which sets
 # privileged_without_host_devices to true.
 @test "Privileged pod runs and is able to execute privileged operations" {
-	kubectl apply -f "${yaml_file}"
-	kubectl wait --for=condition=Ready --timeout="${timeout}" pod "${pod_name}"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
+
     kubectl exec "${pod_name}" -- "${cmd_nsenter[@]}"
 }
 

@@ -46,11 +46,9 @@ setup() {
 }
 
 @test "Test readonly volume for pods" {
-	# Create pod
-	kubectl create -f "${test_yaml}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Create a pod and check its status
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${test_yaml}"
 
 	# Validate file volume body inside the pod
 	file_in_container=$(kubectl exec $pod_name -- "${command[@]}")

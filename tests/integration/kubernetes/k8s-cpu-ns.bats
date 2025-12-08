@@ -56,10 +56,8 @@ setup() {
 
 @test "Check CPU constraints" {
 	# Create the pod
-	kubectl create -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	retries="10"
 

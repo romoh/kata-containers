@@ -420,6 +420,45 @@ wait_for_blocked_request() {
 	waitForProcess "${wait_time}" "${sleep_time}" "${command}" >/dev/null 2>/dev/null
 }
 
+# k8s create a ready pod with pod name and pod yaml within namespace
+k8s_create_pod_ready() {
+	local pod_name="$1"
+	local pod_yaml="$2"
+	local namespace="${3:-default}"
+	local wait_time="${4:-300}"
+	local max_attempts="${5:-3}"
+
+	for attempt in $(seq 1 "$max_attempts"); do
+		info "Attempt $attempt: deleting pod $pod_name"
+
+		kubectl delete pod "$pod_name" --namespace="$namespace" --ignore-not-found=true --now
+		kubectl wait pod "$pod_name" --for=delete --timeout=$timeout --namespace="$namespace" 2>/dev/null
+
+		info "Attempt $attempt: creating pod"
+
+		if ! kubectl create -f "${pod_yaml}" --namespace="${namespace}"; then
+			warn "Create failed, retrying"
+			continue
+		fi
+
+		# Check pod creation
+		run kubectl wait --for=condition=Ready --timeout="${wait_time}s" pod "${pod_name}" --namespace="${namespace}"
+		if [ "$status" -eq 0 ]; then
+			info "Pod $pod_name Ready on attempt $attempt"
+			return 0
+		fi
+
+		if [ "$attempt" -lt "$max_attempts" ]; then
+			local next=$((attempt+1))
+			info "Retry in 2s before attempt $next"
+			sleep 2
+		fi
+	done
+
+	error "Pod $pod_name failed to become Ready after $max_attempts attempts"
+	return 1
+}
+
 # Execute in a pod a command that is allowed by policy.
 pod_exec_allowed_command() {
 	local -r pod_name="$1"

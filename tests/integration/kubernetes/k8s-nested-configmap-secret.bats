@@ -32,10 +32,8 @@ setup() {
 
 @test "Nested mount of a secret volume in a configmap volume for a pod" {
 	# Creates a configmap, secret and pod that mounts the secret inside the configmap
-	kubectl create -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Check config/secret value are correct
 	[ "myconfig" == $(kubectl exec $pod_name -- "${exec_command1[@]}") ]

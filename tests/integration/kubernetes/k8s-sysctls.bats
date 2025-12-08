@@ -28,10 +28,7 @@ setup() {
 
 @test "Setting sysctl" {
 	# Create pod
-	kubectl apply -f "${yaml_file}"
-
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod $pod_name
+	k8s_create_pod_ready "${pod_name}" "${yaml_file}"
 
 	# Check sysctl configuration
 	result=$(kubectl exec $pod_name -- "${exec_command[@]}")

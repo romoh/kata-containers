@@ -51,10 +51,9 @@ setup_yaml() {
 	auto_generate_policy "${pod_config_dir}" "${test_yaml}"
 
 	# Create the pod within memory constraints
-	kubectl create -f "${test_yaml}"
+	# Retries
+	k8s_create_pod_ready "${pod_name}" "${test_yaml}"
 
-	# Check pod creation
-	kubectl wait --for=condition=Ready --timeout=$timeout pod "$pod_name"
 
 	rm -f "${test_yaml}"
 	kubectl delete pod "$pod_name"
