@@ -18,12 +18,10 @@ setup() {
 @test "Port forwarding" {
 	skip "test not working see: ${issue}"
 	deployment_name="redis-master"
-
+	deployment_yaml="${pod_config_dir}/redis-master-deployment.yaml"
 	# Create deployment
-	kubectl apply -f "${pod_config_dir}/redis-master-deployment.yaml"
-
-	# Check deployment
-	kubectl wait --for=condition=Available --timeout=$timeout deployment/"$deployment_name"
+	# Retries
+	k8s_create_deployment_ready "${deployment_yaml}" ${deployment_name}
 	kubectl expose deployment/"$deployment_name"
 
 	# Get pod name

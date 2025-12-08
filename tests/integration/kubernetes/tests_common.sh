@@ -508,6 +508,44 @@ test_pod_policy_error() {
 	return 1
 }
 
+k8s_create_deployment_ready() {
+	local deployment_yaml="$1"
+	local deployment="$2"
+	local wait_time="${3:-300}"
+	local max_attempts="${4:-3}"
+
+	local attempt_num
+
+	for attempt_num in $(seq 1 "${max_attempts}"); do
+		# First,forcefully deleting resources
+		kubectl delete -f "${deployment_yaml}" --ignore-not-found=true --now --timeout=$timeout
+
+		kubectl create -f "${deployment_yaml}"
+		if [ $? -ne 0 ]; then
+			info "Test Succeeded on attempt #${attempt_num}"
+			info "Failed to create ${deployment}. Aborting create."
+			continue
+		fi
+
+		# Check deployment ready
+		run kubectl wait --for=condition=Available --timeout="${wait_time}s" deployment/${deployment}
+		if [ "$status" -eq 0 ]; then
+			info "Test Succeeded on attempt #${attempt_num} for deployment/${deployment}"
+			return 0
+		fi
+
+		# Retry
+		if [ "${attempt_num}" -lt "${max_attempts}" ]; then
+			local next_attempt=$((attempt_num + 1))
+			info "Waiting for 1 seconds before next attempt ${next_attempt} ..."
+			sleep 1
+		fi
+	done
+
+	#Test Failed after ${max_attempts} attempts.
+	return 1
+}
+
 # Execute in a pod a command that is allowed by policy.
 pod_exec_allowed_command() {
 	local -r pod_name="$1"
