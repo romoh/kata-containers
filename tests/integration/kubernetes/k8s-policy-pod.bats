@@ -128,13 +128,6 @@ create_and_wait_for_pod_ready() {
 	wait_for_pod_ready
 }
 
-# Common function for several test cases from this bats script.
-test_pod_policy_error() {
-	kubectl create -f "${correct_configmap_yaml}"
-	kubectl create -f "${incorrect_pod_yaml}"
-	wait_for_blocked_request "CreateContainerRequest" "${pod_name}"
-}
-
 @test "Policy failure: unexpected container image" {
 	# Change the container image after generating the policy. The different image has
 	# different attributes (e.g., different command line) so the policy will reject it.
@@ -142,7 +135,9 @@ test_pod_policy_error() {
 		'.spec.containers[0].image = "quay.io/footloose/ubuntu18.04:latest"' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 @test "Policy failure: unexpected privileged security context" {
@@ -151,7 +146,9 @@ test_pod_policy_error() {
 		'.spec.containers[0].securityContext.privileged = true' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 @test "Policy failure: unexpected terminationMessagePath" {
@@ -160,7 +157,9 @@ test_pod_policy_error() {
 		'.spec.containers[0].terminationMessagePath = "/dev/termination-custom-log"' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 @test "Policy failure: unexpected hostPath volume mount" {
@@ -173,7 +172,9 @@ test_pod_policy_error() {
 		'.spec.volumes += [{"hostPath": {"path": "/tmp/k8s-policy-pod-test", "type": "DirectoryOrCreate"}, "name": "mountpoint-dir"}]' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 @test "Policy failure: unexpected config map" {
@@ -264,7 +265,9 @@ test_pod_policy_error() {
 		'.spec.containers[0].securityContext.runAsUser = 0' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 @test "Policy failure: unexpected UID = 1234" {
@@ -275,7 +278,9 @@ test_pod_policy_error() {
 		'.spec.containers[0].securityContext.runAsUser = 1234' \
 		"${incorrect_pod_yaml}"
 
-	test_pod_policy_error
+	test_pod_policy_error "${pod_name}" "${incorrect_pod_yaml}" "${correct_configmap_yaml}"
+	test_result=$?
+	[ "${test_result}" -eq 0 ]
 }
 
 teardown() {

@@ -459,6 +459,55 @@ k8s_create_pod_ready() {
 	return 1
 }
 
+# Common function for several test cases from this bats script.
+test_pod_policy_error() {
+	local pod_name="$1"
+	local pod_yaml="$2"
+	local resource_yaml="$3"
+	local max_attempts="${4:-3}"
+
+	local attempt_num
+
+	for attempt_num in $(seq 1 "${max_attempts}"); do
+		info "Starting attempt #${attempt_num}"
+		kubectl delete -f "${pod_yaml}" --ignore-not-found=true --now --timeout=120s
+		kubectl delete -f "${resource_yaml}" --ignore-not-found=true
+
+		# Create resource
+		kubectl create -f "${resource_yaml}"
+		if [ $? -ne 0 ]; then
+			warn "Failed to create resource. Retrying..."
+			continue
+		fi
+
+		# Create the incorrect pod (expected to be blocked)
+		kubectl create -f "${pod_yaml}"
+		if [ $? -ne 0 ]; then
+			warn "Failed to create Pod. Retrying..."
+			continue
+		fi
+
+		# Wait for CreateContainerRequest to be blocked
+		run wait_for_blocked_request "CreateContainerRequest" "${pod_name}"
+		if [ "$status" -eq 0 ]; then
+			info "wait_for_blocked_request succeeded on attempt #${attempt_num}"
+			return 0
+		else
+			warn "wait_for_blocked_request FAILED on attempt #${attempt_num}"
+		fi
+
+		# Retry if not the last attempt
+		if [ "${attempt_num}" -lt "${max_attempts}" ]; then
+			local next_attempt=$((attempt_num + 1))
+			info "Waiting for 1 seconds before next attempt ${next_attempt} ..."
+			sleep 1
+		fi
+	done
+
+	error "Test failed after ${max_attempts} attempts."
+	return 1
+}
+
 # Execute in a pod a command that is allowed by policy.
 pod_exec_allowed_command() {
 	local -r pod_name="$1"
