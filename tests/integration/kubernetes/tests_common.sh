@@ -546,6 +546,44 @@ k8s_create_deployment_ready() {
 	return 1
 }
 
+test_deployment_policy_error() {
+    local deploy_yaml=$1
+	local max_attempts="${2:-3}"
+
+	local attempt_num
+
+	for attempt_num in $(seq 1 "${max_attempts}"); do
+		info "Starting attempt #${attempt_num}"
+		kubectl delete -f "${deploy_yaml}" --ignore-not-found=true --now --timeout=120s
+
+        # Initiate deployment
+        kubectl apply -f "${deploy_yaml}"
+		if [ $? -ne 0 ]; then
+			warn "Failed to create deployment. Retrying..."
+			continue
+		fi
+
+        # Wait for the deployment pod to fail
+        run wait_for_blocked_request "CreateContainerRequest" "${deployment_name}"
+		if [ "$status" -eq 0 ]; then
+			info "wait_for_blocked_request succeeded on attempt #${attempt_num}"
+			return 0
+		else
+			warn "wait_for_blocked_request FAILED on attempt #${attempt_num}"
+		fi
+
+		# Retry if not the last attempt
+		if [ "${attempt_num}" -lt "${max_attempts}" ]; then
+			local next_attempt=$((attempt + 1))
+			info "Waiting for 1 seconds before next attempt ${next_attempt} ..."
+			sleep 1
+		fi
+	done
+
+	error "Test failed after ${max_attempts} attempts."
+	return 1
+}
+
 # Execute in a pod a command that is allowed by policy.
 pod_exec_allowed_command() {
 	local -r pod_name="$1"
